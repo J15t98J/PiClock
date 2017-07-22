@@ -1,18 +1,30 @@
 #:kivy 1.10.0
 
 <ClockProgram>:
+    # <programmatic name>: <kv name>
     bgimage: aimg
+    clocklabel: clocklbl
 
+    # background image
     AsyncTouchImage:
+        canvas:
+            Rectangle:
+                texture: self.texture
+                # fix for auto-scaling image
+                size: root.width if root.width/root.height >= self.image_ratio else root.height * self.image_ratio, root.height if root.width/root.height <= self.image_ratio else root.width / self.image_ratio
+
         id: aimg
         size: root.size
-        source: "https://source.unsplash.com/featured/?nature"
-        allow_stretch: False
-        keep_ratio: True
 
+    # clock label
     Label:
-        font_size: 90
-        center_x: root.width/2
+        id: clocklbl
+        font_size: 140
+        center_x: root.width/2 - self.texture_size[0]/2
         center_y: root.height/2
-        top: root.top - 50
         text: root.curtime
+
+        # fix for label text overlapping bounds
+        size_hint_x: None
+        text_size: None, None
+        width: self.texture_size[0]
