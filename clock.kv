@@ -40,23 +40,27 @@
             size: root.size
 
             # clock label
-            Label:
+            CustomLabel:
                 id: clocklbl
                 font_size: 140
                 text: root.curtime
+                center_x: root.center_x
 
                 # fix for label text overlapping bounds
-                size_hint_x: None
+                size_hint: (None, None)
                 text_size: None, None
-                width: self.texture_size[0]
+                size: self.texture_size
+                pos_hint: {"center_y" : .5}
 
             # bottom menu
             FloatLayout:
                 id: menu
-                size: root.width, 70
+                size: root.width, root.height/10
+                size_hint: (None, 1/10)
 
                 MenuButton:
                     pos_hint: {"x": 1/8, "y": 0}
+                    height: self.parent.height
                     on_press: self.menuButtonPressed("pin")
                     Image:
                         id: img1
@@ -66,6 +70,7 @@
 
                 MenuButton:
                     pos_hint: {"center_x": .5, "y": 0}
+                    height: self.parent.height
                     on_press: self.menuButtonPressed("alarms")
                     Image:
                         id: img2
@@ -75,6 +80,7 @@
 
                 MenuButton:
                     pos_hint: {"right": 7/8, "y": 0}
+                    height: self.parent.height
                     on_release: self.menuButtonPressed("settings")
                     Image:
                         id: img3
@@ -102,7 +108,7 @@
 
 
 <MenuButton@CustomButton>:
-    height: 70
+
     size_hint: (1/4, None)
     background_down: ""
     background_color: (1, 1, 1, 0)  if self.state == "normal" else (1, 1, 1, 0.1)
