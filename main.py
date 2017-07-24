@@ -17,7 +17,10 @@ class ClockProgram(Widget):
     curtime = StringProperty()
 
     def update(self, dt):
-        self.curtime = time.strftime("%H:%M:%S")
+        timestring = ""  # TODO: move timestring to bound function to reduce overhead
+        timestring += "%H:%M" if self.app.config.get("main_screen", "24hr") == "True" else "%I:%M"
+        timestring += ":%S" if self.app.config.get("main_screen", "seconds") == "True" else ""
+        self.curtime = time.strftime(timestring)
 
 
 class AsyncTouchImage(AsyncImage):
@@ -77,25 +80,32 @@ class AsyncTouchImage(AsyncImage):
     def on_touch_move(self, touch):
         firstTouch = self.touchEvents[touch] if touch in self.touchEvents else None
         if firstTouch and firstTouch[1] == "label" and self.isScaling:
-            app = App.get_running_app().instance
+            app = App.get_running_app()
+            program = app.instance
             posDiff = (touch.pos[0] - firstTouch[2][0], touch.pos[1] - firstTouch[2][1])
             distance = (posDiff[0]**2 + posDiff[1]**2)**0.5
-            app.clocklabel.font_size = self.scaleFrom + distance if posDiff[1] > 0 else self.scaleFrom - distance
+            program.clocklabel.font_size = self.scaleFrom + distance if posDiff[1] > 0 else self.scaleFrom - distance
+            app.config.set("main_screen", "font_size", program.clocklabel.font_size)
 
 
 class CustomButton(Button):
     def menuButtonPressed(self, instance):
-        app = App.get_running_app().instance
+        app = App.get_running_app()
+        program = app.instance
         if instance == "pin":
             pass
         elif instance == "alarms":
-            pass
+            program.effWid.effects = [HorizontalBlurEffect(size=20), VerticalBlurEffect(size=20)]
+            program.screen_manager.current = "alarms"
         elif instance == "settings":
-            app.effWid.effects = [HorizontalBlurEffect(size=20), VerticalBlurEffect(size=20)]
-            app.screen_manager.current = "settings"
+            program.effWid.effects = [HorizontalBlurEffect(size=20), VerticalBlurEffect(size=20)]
+            program.screen_manager.current = "settings"
+        elif instance == "close":
+            program.effWid.effects = []
+            program.screen_manager.current = "main"
         elif instance == "exit":
-            app.effWid.effects = []
-            app.screen_manager.current = "main"
+            app.config.write()
+            app.stop()
 
 
 class CustomLabel(Label):
@@ -103,6 +113,10 @@ class CustomLabel(Label):
 
 
 class MainScreen(Screen):
+    pass
+
+
+class AlarmsScreen(Screen):
     pass
 
 
@@ -121,16 +135,29 @@ def recenterimg(instance, value):
 
 class ClockApp(App):
     instance = None
+    config = None
+
+    def build_config(self, config):
+        config.setdefaults("main_screen", {
+            "24hr": True,
+            "seconds": False,
+            "font_size": 140
+        })
 
     def build(self):
         self.instance = ClockProgram()
+        self.instance.app = self
+
         Clock.schedule_interval(self.instance.update, 1/60)
+
         # TODO: surely there's a better way of doing this?
         App.get_running_app().instance.clocklabel.bind(size=recenter)
         App.get_running_app().instance.image1.bind(size=recenterimg)
         App.get_running_app().instance.image2.bind(size=recenterimg)
         App.get_running_app().instance.image3.bind(size=recenterimg)
+
         Window.size = (800, 480) # TODO: remove dev aid
+
         return self.instance
 
 if __name__ == "__main__":

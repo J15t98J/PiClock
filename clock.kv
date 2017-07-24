@@ -42,7 +42,7 @@
             # clock label
             CustomLabel:
                 id: clocklbl
-                font_size: 140
+                font_size: float(app.config.get("main_screen", "font_size"))
                 text: root.curtime
                 center_x: root.center_x
 
@@ -88,17 +88,29 @@
                         height: root.height/14
                         source: "img\settings.png"
 
+        AlarmsScreen:
+            id: alarms_screen
+            name: "alarms"
+            manager: "screen_manager"
+
         SettingsScreen:
             id: settings_screen
             name: "settings"
             manager: "screen_manager"
-            CustomButton:
-                size: 50, 50
-                size_hint: (None, None)
-                pos_hint: {"right": 1, "top": 1}
-                background_down: ""
-                background_color: (1, 1, 1, 0)  if self.state == "normal" else (1, 1, 1, 0.1)
+
+            CornerButton:
+                pos_hint: {"x": 0, "top": 1}
                 on_release: self.menuButtonPressed("exit")
+
+                Image:
+                    height: root.height/16
+                    source: "img\exit.png"
+                    center_x: self.parent.center_x
+                    center_y: self.parent.center_y
+
+            CornerButton:
+                pos_hint: {"right": 1, "top": 1}
+                on_release: self.menuButtonPressed("close")
 
                 Image:
                     height: root.height/16
@@ -106,10 +118,56 @@
                     center_x: self.parent.center_x
                     center_y: self.parent.center_y
 
+            StackLayout:
+                size_hint: (None, None)
+                size: root.width-150, root.height-150
+                orientation: "tb-lr"
+                center_x: self.parent.center_x
+                center_y: self.parent.center_y
+
+                Switch:
+                    id: setting_24hr
+                    size: 83, 32
+                    size_hint: (None, None)
+                    active: app.config.get("main_screen", "24hr") == "True"
+                    on_active: app.config.set("main_screen", "24hr", self.active)
+
+                    Label:
+                        text: "24-hour mode"
+                        # fix for label text overlapping bounds
+                        size_hint: (None, None)
+                        text_size: None, None
+                        size: self.texture_size
+                        x: 165 # TODO: better solution for when they are stacked in two columns
+                        center_y: self.parent.center_y
+
+
+                Switch:
+                    id: setting_seconds
+                    size: 83, 32
+                    size_hint: (None, None)
+                    active: app.config.get("main_screen", "seconds") == "True"
+                    on_active: app.config.set("main_screen", "seconds", self.active)
+
+                    Label:
+                        text: "Show seconds"
+                        # fix for label text overlapping bounds
+                        size_hint: (None, None)
+                        text_size: None, None
+                        size: self.texture_size
+                        x: 165
+                        center_y: self.parent.center_y
+
+
+
 
 <MenuButton@CustomButton>:
-
     size_hint: (1/4, None)
     background_down: ""
     background_color: (1, 1, 1, 0)  if self.state == "normal" else (1, 1, 1, 0.1)
 
+<CornerButton@CustomButton>:
+    size: 50, 50
+    size_hint: (None, None)
+    background_down: ""
+    background_color: (1, 1, 1, 0)  if self.state == "normal" else (1, 1, 1, 0.1)
