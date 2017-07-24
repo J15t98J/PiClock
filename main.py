@@ -20,6 +20,7 @@ class ClockProgram(Widget):
         timestring = ""  # TODO: move timestring to bound function to reduce overhead
         timestring += "%H:%M" if self.app.config.get("main_screen", "24hr") == "True" else "%I:%M"
         timestring += ":%S" if self.app.config.get("main_screen", "seconds") == "True" else ""
+        timestring += " %p" if self.app.config.get("main_screen", "24hr") == "False" else ""
         self.curtime = time.strftime(timestring)
 
 
@@ -50,10 +51,10 @@ class AsyncTouchImage(AsyncImage):
         self.scaleFrom = App.get_running_app().instance.clocklabel.font_size
 
     def on_touch_down(self, touch):
-        app = App.get_running_app().instance
+        program = App.get_running_app().instance
         # ensure touch is inside bg image and on main screen
-        if self.collide_point(*touch.pos) and app.screen_manager.current == "main":
-            if app.clocklabel.collide_point(*touch.pos):
+        if self.collide_point(*touch.pos) and program.screen_manager.current == "main":
+            if program.clocklabel.collide_point(*touch.pos):
                 # user is trying to scale the clock label
                 if not self.hasScaleEvent:
                     self.touchEvents[touch] = [Clock.schedule_once(self.activateLabelZoom, 1), "label", touch.pos]
@@ -71,6 +72,8 @@ class AsyncTouchImage(AsyncImage):
         if touch in self.touchEvents and self.touchEvents[touch][1] == "label":
             self.hasScaleEvent = False
             self.isScaling = False
+            app = App.get_running_app()
+            app.config.set("main_screen", "font_size", app.instance.clocklabel.font_size)
         if timeDiff < 1000:
             if touch in self.touchEvents:
                 Clock.unschedule(self.touchEvents[touch][0])
@@ -80,12 +83,11 @@ class AsyncTouchImage(AsyncImage):
     def on_touch_move(self, touch):
         firstTouch = self.touchEvents[touch] if touch in self.touchEvents else None
         if firstTouch and firstTouch[1] == "label" and self.isScaling:
-            app = App.get_running_app()
-            program = app.instance
+            program = App.get_running_app().instance
             posDiff = (touch.pos[0] - firstTouch[2][0], touch.pos[1] - firstTouch[2][1])
             distance = (posDiff[0]**2 + posDiff[1]**2)**0.5
             program.clocklabel.font_size = self.scaleFrom + distance if posDiff[1] > 0 else self.scaleFrom - distance
-            app.config.set("main_screen", "font_size", program.clocklabel.font_size)
+
 
 
 class CustomButton(Button):
@@ -101,10 +103,10 @@ class CustomButton(Button):
             program.effWid.effects = [HorizontalBlurEffect(size=20), VerticalBlurEffect(size=20)]
             program.screen_manager.current = "settings"
         elif instance == "close":
+            app.config.write()
             program.effWid.effects = []
             program.screen_manager.current = "main"
         elif instance == "exit":
-            app.config.write()
             app.stop()
 
 
