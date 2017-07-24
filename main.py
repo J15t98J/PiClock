@@ -8,6 +8,7 @@ from kivy.properties import StringProperty
 from kivy.uix.button import Button
 from kivy.uix.effectwidget import HorizontalBlurEffect, VerticalBlurEffect
 from kivy.uix.image import AsyncImage
+from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
 
 
@@ -38,8 +39,9 @@ class AsyncTouchImage(AsyncImage):
         self.src = self.src + "#" # refuses to change picture if src URL doesn't change
 
     def on_touch_down(self, touch):
+        app = App.get_running_app().instance
         # ensure touch is inside bg pic but outside clock label
-        if self.collide_point(*touch.pos) and not App.get_running_app().instance.clocklabel.collide_point(*touch.pos):
+        if self.collide_point(*touch.pos) and not app.clocklabel.collide_point(*touch.pos) and app.screen_manager.current == "main":
             self.startTime = time.time()
             self.event = Clock.schedule_once(self.cycleImage, 1)
         return True
@@ -50,23 +52,30 @@ class AsyncTouchImage(AsyncImage):
         if timeDiff < 1000:
             Clock.unschedule(self.event)
         else:
-            pass # TODO: show/hide for action buttons
+            pass # TODO: show/hide for macro buttons
         return True
 
 
 class CustomButton(Button):
     def menuButtonPressed(self, instance):
-        print(instance)
+        app = App.get_running_app().instance
         if instance == "pin":
             pass
         elif instance == "alarms":
             pass
         elif instance == "settings":
-            app = App.get_running_app().instance
             app.effWid.effects = [HorizontalBlurEffect(size=20), VerticalBlurEffect(size=20)]
-            app.menu.opacity = 0
-            app.menu.disabled = True
-            app.clocklabel.opacity = 0
+            app.screen_manager.current = "settings"
+        elif instance == "exit":
+            app.effWid.effects = []
+            app.screen_manager.current = "main"
+
+
+class MainScreen(Screen):
+    pass
+
+
+class SettingsScreen(Screen):
     pass
 
 

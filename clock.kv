@@ -1,5 +1,6 @@
 #:kivy 1.10.0
 #:import math math
+#:import screen_transition kivy.uix.screenmanager.SwapTransition
 
 <ClockProgram>:
     # <programmatic name>: <kv name>
@@ -10,71 +11,97 @@
     image3: img3
     effWid: eff
     menu: menu
+    screen_manager: screen_manager
 
     # background image
     EffectWidget:
         id: eff
         size: root.size
+
         AsyncTouchImage:
+            id: aimg
+            size: root.size
+
             canvas:
                 Rectangle:
                     texture: self.texture
                     # fix for auto-scaling image
                     size: max(root.width, root.height * self.image_ratio), max(root.height, root.width / self.image_ratio)
 
-            id: aimg
+    ScreenManager:
+        id: screen_manager
+        transition: screen_transition()
+        size: root.size
+
+        MainScreen:
+            id: main_screen
+            name: "main"
+            manager: "screen_manager"
             size: root.size
 
-    # clock label
-    Label:
-        id: clocklbl
-        font_size: 140
-        center_x: root.width/2
-        center_y: root.height/2
-        text: root.curtime
+            # clock label
+            Label:
+                id: clocklbl
+                font_size: 140
+                text: root.curtime
 
-        # fix for label text overlapping bounds
-        size_hint_x: None
-        text_size: None, None
-        width: self.texture_size[0]
+                # fix for label text overlapping bounds
+                size_hint_x: None
+                text_size: None, None
+                width: self.texture_size[0]
 
-    # bottom menu
-    FloatLayout:
-        id: menu
-        size: root.width, 70
-        #orientation: "horizontal"
+            # bottom menu
+            FloatLayout:
+                id: menu
+                size: root.width, 70
 
-        Menu:
-            pos_hint: {"x": 1/8, "y": 0}
-            on_press: self.menuButtonPressed("pin")
-            Image:
-                id: img1
-                center_x: self.parent.center_x
-                #center_y: self.parent.center_y
-                height: root.height/14
-                source: "img\pin.png"
+                MenuButton:
+                    pos_hint: {"x": 1/8, "y": 0}
+                    on_press: self.menuButtonPressed("pin")
+                    Image:
+                        id: img1
+                        center_x: self.parent.center_x
+                        height: root.height/14
+                        source: "img\pin.png"
 
-        Menu:
-            pos_hint: {"center_x": .5, "y": 0}
-            on_press: self.menuButtonPressed("alarms")
-            Image:
-                id: img2
-                center_x: self.parent.center_x
-                #center_y: self.parent.center_y
-                height: root.height/14
-                source: "img\\alarm.png"
+                MenuButton:
+                    pos_hint: {"center_x": .5, "y": 0}
+                    on_press: self.menuButtonPressed("alarms")
+                    Image:
+                        id: img2
+                        center_x: self.parent.center_x
+                        height: root.height/14
+                        source: "img\\alarm.png"
 
-        Menu:
-            pos_hint: {"right": 7/8, "y": 0}
-            on_press: self.menuButtonPressed("settings")
-            Image:
-                id: img3
-                center_x: self.parent.center_x
-                #center_y: 35
-                height: root.height/14
-                source: "img\settings.png"
+                MenuButton:
+                    pos_hint: {"right": 7/8, "y": 0}
+                    on_release: self.menuButtonPressed("settings")
+                    Image:
+                        id: img3
+                        center_x: self.parent.center_x
+                        height: root.height/14
+                        source: "img\settings.png"
 
-<Menu@CustomButton>:
+        SettingsScreen:
+            id: settings_screen
+            name: "settings"
+            manager: "screen_manager"
+            CustomButton:
+                size: 50, 50
+                size_hint: (None, None)
+                pos_hint: {"right": 1, "top": 1}
+                background_down: ""
+                background_color: (1, 1, 1, 0)  if self.state == "normal" else (1, 1, 1, 0.1)
+                on_release: self.menuButtonPressed("exit")
+
+                Image:
+                    height: root.height/16
+                    source: "img\close.png"
+                    center_x: self.parent.center_x
+                    center_y: self.parent.center_y
+
+
+<MenuButton@CustomButton>:
     height: 70
     size_hint: (1/4, None)
     background_down: ""
