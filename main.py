@@ -2,8 +2,11 @@ import time
 
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.core.window import Window
 from kivy.loader import Loader
 from kivy.properties import StringProperty
+from kivy.uix.button import Button
+from kivy.uix.effectwidget import HorizontalBlurEffect, VerticalBlurEffect
 from kivy.uix.image import AsyncImage
 from kivy.uix.widget import Widget
 
@@ -16,7 +19,7 @@ class ClockProgram(Widget):
 
 
 class AsyncTouchImage(AsyncImage):
-    src = "https://source.unsplash.com/featured/?nature" # TODO: allow setting custom search term via settings
+    src = "https://source.unsplash.com/featured/?nature" # TODO: allow setting custom search term via settings; TODO: night image mode?
     startTime = 0
 
     def __init__(self, **kwargs):
@@ -51,12 +54,43 @@ class AsyncTouchImage(AsyncImage):
         return True
 
 
+class CustomButton(Button):
+    def menuButtonPressed(self, instance):
+        print(instance)
+        if instance == "pin":
+            pass
+        elif instance == "alarms":
+            pass
+        elif instance == "settings":
+            app = App.get_running_app().instance
+            app.effWid.effects = [HorizontalBlurEffect(size=20), VerticalBlurEffect(size=20)]
+            app.menu.opacity = 0
+            app.menu.disabled = True
+            app.clocklabel.opacity = 0
+    pass
+
+
+# fix for skewed clock label on program start due to clock text not having loaded in yet
+def recenter(instance, value):
+    instance.center_x = instance.parent.width/2
+
+
+def recenterimg(instance, value):
+    instance.center_y = instance.parent.height/2
+
+
 class ClockApp(App):
     instance = None
 
     def build(self):
         self.instance = ClockProgram()
         Clock.schedule_interval(self.instance.update, 1/60)
+        # TODO: surely there's a better way of doing this?
+        App.get_running_app().instance.clocklabel.bind(size=recenter)
+        App.get_running_app().instance.image1.bind(size=recenterimg)
+        App.get_running_app().instance.image2.bind(size=recenterimg)
+        App.get_running_app().instance.image3.bind(size=recenterimg)
+        Window.size = (800, 480) # TODO: remove dev aid
         return self.instance
 
 if __name__ == "__main__":

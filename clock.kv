@@ -1,26 +1,35 @@
 #:kivy 1.10.0
+#:import math math
 
 <ClockProgram>:
     # <programmatic name>: <kv name>
     bgimage: aimg
     clocklabel: clocklbl
+    image1: img1
+    image2: img2
+    image3: img3
+    effWid: eff
+    menu: menu
 
     # background image
-    AsyncTouchImage:
-        canvas:
-            Rectangle:
-                texture: self.texture
-                # fix for auto-scaling image
-                size: root.width if root.width/root.height >= self.image_ratio else root.height * self.image_ratio, root.height if root.width/root.height <= self.image_ratio else root.width / self.image_ratio
-
-        id: aimg
+    EffectWidget:
+        id: eff
         size: root.size
+        AsyncTouchImage:
+            canvas:
+                Rectangle:
+                    texture: self.texture
+                    # fix for auto-scaling image
+                    size: max(root.width, root.height * self.image_ratio), max(root.height, root.width / self.image_ratio)
+
+            id: aimg
+            size: root.size
 
     # clock label
     Label:
         id: clocklbl
         font_size: 140
-        center_x: root.width/2 - self.texture_size[0]/2
+        center_x: root.width/2
         center_y: root.height/2
         text: root.curtime
 
@@ -28,3 +37,46 @@
         size_hint_x: None
         text_size: None, None
         width: self.texture_size[0]
+
+    # bottom menu
+    FloatLayout:
+        id: menu
+        size: root.width, 70
+        #orientation: "horizontal"
+
+        Menu:
+            pos_hint: {"x": 1/8, "y": 0}
+            on_press: self.menuButtonPressed("pin")
+            Image:
+                id: img1
+                center_x: self.parent.center_x
+                #center_y: self.parent.center_y
+                height: root.height/14
+                source: "img\pin.png"
+
+        Menu:
+            pos_hint: {"center_x": .5, "y": 0}
+            on_press: self.menuButtonPressed("alarms")
+            Image:
+                id: img2
+                center_x: self.parent.center_x
+                #center_y: self.parent.center_y
+                height: root.height/14
+                source: "img\\alarm.png"
+
+        Menu:
+            pos_hint: {"right": 7/8, "y": 0}
+            on_press: self.menuButtonPressed("settings")
+            Image:
+                id: img3
+                center_x: self.parent.center_x
+                #center_y: 35
+                height: root.height/14
+                source: "img\settings.png"
+
+<Menu@CustomButton>:
+    height: 70
+    size_hint: (1/4, None)
+    background_down: ""
+    background_color: (1, 1, 1, 0)  if self.state == "normal" else (1, 1, 1, 0.1)
+
