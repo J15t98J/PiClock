@@ -93,6 +93,16 @@
             name: "alarms"
             manager: "screen_manager"
 
+            CornerButton:
+                pos_hint: {"right": 1, "top": 1}
+                on_release: self.menuButtonPressed("close")
+
+                Image:
+                    height: root.height/16
+                    source: "img\close.png"
+                    center_x: self.parent.center_x
+                    center_y: self.parent.center_y
+
         SettingsScreen:
             id: settings_screen
             name: "settings"
@@ -141,7 +151,6 @@
                         x: 165 # TODO: better solution for when they are stacked in two columns
                         center_y: self.parent.center_y
 
-
                 Switch:
                     id: setting_seconds
                     size: 83, 32
@@ -158,7 +167,20 @@
                         x: 165
                         center_y: self.parent.center_y
 
+                Label:
+                    size_hint: (None, None)
+                    text_size: None, None
+                    size: self.texture_size
+                    text: "\nBackground images courtesy of Unsplash.\nImage search terms: (,=AND  ;=OR)"
 
+                KeywordInput:
+                    size: 200, 32
+                    size_hint: (None, None)
+                    multiline: False
+                    text: app.config.get("main_screen", "img_keywords")
+                    on_text: app.config.set("main_screen", "img_keywords", self.text if not self.text == "" else "nature")
+
+                # TODO: attribution for current image
 
 
 <MenuButton@CustomButton>:

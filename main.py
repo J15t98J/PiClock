@@ -1,4 +1,7 @@
+import random
+import re
 import time
+from functools import partial
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -10,22 +13,25 @@ from kivy.uix.effectwidget import HorizontalBlurEffect, VerticalBlurEffect
 from kivy.uix.image import AsyncImage
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
+from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 
 
-class ClockProgram(Widget):
+class ClockProgram(Widget):  # TODO: move timestring to bound function to reduce overhead
     curtime = StringProperty()
 
     def update(self, dt):
-        timestring = ""  # TODO: move timestring to bound function to reduce overhead
+        timestring = ""
         timestring += "%H:%M" if self.app.config.get("main_screen", "24hr") == "True" else "%I:%M"
         timestring += ":%S" if self.app.config.get("main_screen", "seconds") == "True" else ""
         timestring += " %p" if self.app.config.get("main_screen", "24hr") == "False" else ""
         self.curtime = time.strftime(timestring)
 
 
-class AsyncTouchImage(AsyncImage):
-    src = "https://source.unsplash.com/featured/?nature" # TODO: allow setting custom search term via settings; TODO: night image mode?
+class AsyncTouchImage(AsyncImage):  # TODO: night image mode?
+    srcBase = "https://source.unsplash.com/featured/?"
+    isPinned = False
+    rotateEvent = None
     startTime = 0
     touchEvents = {}
     hasScaleEvent = False
@@ -34,17 +40,23 @@ class AsyncTouchImage(AsyncImage):
     def __init__(self, **kwargs):
         super(AsyncTouchImage, self).__init__(**kwargs)
         # set initial background image
-        self.cycleImage(None)
+        self.cycleImage(None, userTriggered=False)
+        self.rotateEvent = Clock.schedule_interval(partial(self.cycleImage, userTriggered=False), 3600)
 
     # wrapper function for event callback bind
     def setImage(self, image):
         self.texture=image.texture
 
-    def cycleImage(self, dt):
+    def cycleImage(self, dt, **kwargs):
         # TODO: keep next image cached?
-        image = Loader.image(self.src)
-        image.bind(on_load=self.setImage)
-        self.src = self.src + "#" # refuses to change picture if src URL doesn't change
+        if not self.isPinned:
+            keywords = App.get_running_app().config.get("main_screen", "img_keywords").split(";")
+            self.src = self.srcBase + random.choice(keywords) + "#"*random.randrange(1, 30)  # hash guarantees new image even if same keywords
+            image = Loader.image(self.src)
+            image.bind(on_load=self.setImage)
+            if kwargs["userTriggered"]:
+                Clock.unschedule(self.rotateEvent)
+                self.rotateEvent = Clock.schedule_interval(partial(self.cycleImage, userTriggered=False), 3600)
 
     def activateLabelZoom(self, dt):
         self.isScaling = True
@@ -61,7 +73,7 @@ class AsyncTouchImage(AsyncImage):
                     self.hasScaleEvent = True
             else:
                 # user is trying to change the bg image
-                self.touchEvents[touch] = [Clock.schedule_once(self.cycleImage, 1), "bg"]
+                self.touchEvents[touch] = [Clock.schedule_once(partial(self.cycleImage, userTriggered=True), 1), "bg"]
             self.startTime = time.time()
 
         return True
@@ -89,13 +101,18 @@ class AsyncTouchImage(AsyncImage):
             program.clocklabel.font_size = self.scaleFrom + distance if posDiff[1] > 0 else self.scaleFrom - distance
 
 
-
 class CustomButton(Button):
     def menuButtonPressed(self, instance):
         app = App.get_running_app()
         program = app.instance
         if instance == "pin":
-            pass
+            program.image1.source = "img\pin-off.png" if program.image1.source == "img\pin.png" else "img\pin.png"
+            program.bgimage.isPinned = not program.bgimage.isPinned
+            if program.bgimage.rotateEvent:
+                Clock.unschedule(program.bgimage.rotateEvent)
+                program.bgimage.rotateEvent = None
+            else:
+                program.bgimage.rotateEvent = Clock.schedule_interval(partial(program.bgimage.cycleImage, userTriggered=False), 3600)
         elif instance == "alarms":
             program.effWid.effects = [HorizontalBlurEffect(size=20), VerticalBlurEffect(size=20)]
             program.screen_manager.current = "alarms"
@@ -112,6 +129,12 @@ class CustomButton(Button):
 
 class CustomLabel(Label):
     pass
+
+
+class KeywordInput(TextInput):
+    def insert_text(self, substring, from_undo=False):
+        s = re.sub(re.compile(r"[^A-Za-z0-9,;]"), "", substring)
+        return super(KeywordInput, self).insert_text(s, from_undo=from_undo)
 
 
 class MainScreen(Screen):
@@ -143,7 +166,8 @@ class ClockApp(App):
         config.setdefaults("main_screen", {
             "24hr": True,
             "seconds": False,
-            "font_size": 140
+            "font_size": 140,
+            "img_keywords": "nature"
         })
 
     def build(self):
@@ -158,7 +182,7 @@ class ClockApp(App):
         App.get_running_app().instance.image2.bind(size=recenterimg)
         App.get_running_app().instance.image3.bind(size=recenterimg)
 
-        Window.size = (800, 480) # TODO: remove dev aid
+        Window.size = (800, 480)  # TODO: remove dev aid
 
         return self.instance
 
